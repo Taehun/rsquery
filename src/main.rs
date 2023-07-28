@@ -6,6 +6,8 @@ use actix_cors::Cors;
 use actix_web::middleware::Logger;
 use actix_web::{http::header, web, App, HttpServer};
 use model::AppState;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -14,8 +16,28 @@ async fn main() -> std::io::Result<()> {
     }
     env_logger::init();
 
+    #[derive(OpenApi)]
+    #[openapi(
+        paths(
+            handler::todos_list_handler,
+            handler::create_todo_handler,
+            handler::get_todo_handler,
+            handler::edit_todo_handler,
+            handler::delete_todo_handler,
+        ),
+        components(
+            schemas(model::Todo, model::UpdateTodoSchema, response::ErrorResponse)
+        ),
+        tags(
+            (name = "todo", description = "Todo management endpoints.")
+        ),
+    )]
+    struct ApiDoc;
+
     let todo_db = AppState::init();
     let app_data = web::Data::new(todo_db);
+
+    let openapi: utoipa::openapi::OpenApi = ApiDoc::openapi();
 
     println!("🚀 Server started successfully");
 
@@ -35,8 +57,11 @@ async fn main() -> std::io::Result<()> {
             .configure(handler::config)
             .wrap(cors)
             .wrap(Logger::default())
+            .service(
+                SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", openapi.clone()),
+            )
     })
-    .bind(("127.0.0.1", 8000))?
+    .bind(("127.0.0.1", 8080))?
     .run()
     .await
 }

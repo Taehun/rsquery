@@ -1,15 +1,18 @@
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
+use utoipa::ToSchema;
 
 #[allow(non_snake_case)]
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, ToSchema)]
 pub struct Todo {
     pub id: Option<String>,
     pub title: String,
     pub content: String,
     pub completed: Option<bool>,
+    #[schema(value_type = Option<String>)]
     pub createdAt: Option<DateTime<Utc>>,
+    #[schema(value_type = Option<String>)]
     pub updatedAt: Option<DateTime<Utc>>,
 }
 
@@ -32,7 +35,7 @@ pub struct QueryOptions {
 }
 
 #[allow(non_snake_case)]
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateTodoSchema {
     pub title: Option<String>,
     pub content: Option<String>,

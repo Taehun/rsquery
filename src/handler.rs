@@ -1,6 +1,6 @@
 use crate::{
     model::{AppState, QueryOptions, Todo, UpdateTodoSchema},
-    response::{GenericResponse, SingleTodoResponse, TodoData, TodoListResponse},
+    response::{ErrorResponse, GenericResponse, SingleTodoResponse, TodoData, TodoListResponse},
 };
 use actix_web::{delete, get, patch, post, web, HttpResponse, Responder};
 use chrono::prelude::*;
@@ -17,6 +17,20 @@ async fn health_checker_handler() -> impl Responder {
     HttpResponse::Ok().json(response_json)
 }
 
+/// Get list of todos.
+///
+/// List todos from in-memory todo store.
+///
+/// One could call the api endpoint with following curl.
+/// ```text
+/// curl http://localhost:8080/api/todo
+/// ```
+#[utoipa::path(
+    path = "/api/todos",
+    responses(
+        (status = 200, description = "List current todo items", body = [Todo])
+    )
+)]
 #[get("/todos")]
 pub async fn todos_list_handler(
     opts: web::Query<QueryOptions>,
@@ -37,6 +51,23 @@ pub async fn todos_list_handler(
     HttpResponse::Ok().json(json_response)
 }
 
+/// Create new Todo to shared in-memory storage.
+///
+/// Post a new `Todo` in request body as json to store it. Api will return
+/// created `Todo` on success or `ErrorResponse::Conflict` if todo with same id already exists.
+///
+/// One could call the api with.
+/// ```text
+/// curl -X POST http://localhost:8080/api/todo -d '{"title": "Movie ticket", "content": "Buy movie ticket"}'
+/// ```
+#[utoipa::path(
+    path = "/api/todos",
+    request_body = Todo,
+    responses(
+        (status = 201, description = "Todo created successfully", body = Todo),
+        (status = 409, description = "Todo with id already exists", body = ErrorResponse, example = json!(ErrorResponse::Conflict(String::from("id = 1"))))
+    )
+)]
 #[post("/todos")]
 async fn create_todo_handler(
     mut body: web::Json<Todo>,
@@ -74,6 +105,19 @@ async fn create_todo_handler(
     HttpResponse::Ok().json(json_response)
 }
 
+/// Get Todo by given todo id.
+///
+/// Return found `Todo` with status 200 or 404 not found if `Todo` is not found from shared in-memory storage.
+#[utoipa::path(
+    path = "/api/todos/{id}",
+    responses(
+        (status = 200, description = "Todo found from storage", body = Todo),
+        (status = 404, description = "Todo not found by id", body = ErrorResponse, example = json!(ErrorResponse::NotFound(String::from("id = 1"))))
+    ),
+    params(
+        ("id", description = "Unique storage id of Todo")
+    )
+)]
 #[get("/todos/{id}")]
 async fn get_todo_handler(path: web::Path<String>, data: web::Data<AppState>) -> impl Responder {
     let vec = data.todo_db.lock().unwrap();
@@ -98,6 +142,24 @@ async fn get_todo_handler(path: web::Path<String>, data: web::Data<AppState>) ->
     HttpResponse::Ok().json(json_response)
 }
 
+/// Update Todo with given id.
+///
+/// This endpoint supports optional authentication.
+///
+/// Tries to update `Todo` by given id as path variable. If todo is found by id values are
+/// updated according `TodoUpdateRequest` and updated `Todo` is returned with status 200.
+/// If todo is not found then 404 not found is returned.
+#[utoipa::path(
+    path = "/api/todos/{id}",
+    request_body = UpdateTodoSchema,
+    responses(
+        (status = 200, description = "Todo updated successfully", body = Todo),
+        (status = 404, description = "Todo not found by id", body = ErrorResponse, example = json!(ErrorResponse::NotFound(String::from("id = 1"))))
+    ),
+    params(
+        ("id", description = "Unique storage id of Todo")
+    ),
+)]
 #[patch("/todos/{id}")]
 async fn edit_todo_handler(
     path: web::Path<String>,
@@ -151,6 +213,23 @@ async fn edit_todo_handler(
     HttpResponse::Ok().json(json_response)
 }
 
+/// Delete Todo by given path variable id.
+///
+/// This endpoint needs `api_key` authentication in order to call. Api key can be found from README.md.
+///
+/// Api will delete todo from shared in-memory storage by the provided id and return success 200.
+/// If storage does not contain `Todo` with given id 404 not found will be returned.
+#[utoipa::path(
+    path = "/api/todos/{id}",
+    responses(
+        (status = 200, description = "Todo deleted successfully"),
+        (status = 401, description = "Unauthorized to delete Todo", body = ErrorResponse, example = json!(ErrorResponse::Unauthorized(String::from("missing api key")))),
+        (status = 404, description = "Todo not found by id", body = ErrorResponse, example = json!(ErrorResponse::NotFound(String::from("id = 1"))))
+    ),
+    params(
+        ("id", description = "Unique storage id of Todo")
+    ),
+)]
 #[delete("/todos/{id}")]
 async fn delete_todo_handler(path: web::Path<String>, data: web::Data<AppState>) -> impl Responder {
     let mut vec = data.todo_db.lock().unwrap();
