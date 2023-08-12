@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::model::Todo;
+use crate::model::QueryJob;
 
 #[derive(Serialize)]
 pub struct GenericResponse {
@@ -9,22 +9,15 @@ pub struct GenericResponse {
     pub message: String,
 }
 
-#[derive(Serialize, Debug)]
-pub struct TodoData {
-    pub todo: Todo,
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
+pub struct QueryJobData {
+    pub job: QueryJob,
 }
 
-#[derive(Serialize, Debug)]
-pub struct SingleTodoResponse {
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
+pub struct QueryJobResponse {
     pub status: String,
-    pub data: TodoData,
-}
-
-#[derive(Serialize, Debug)]
-pub struct TodoListResponse {
-    pub status: String,
-    pub results: usize,
-    pub todos: Vec<Todo>,
+    pub result: QueryJobData,
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]

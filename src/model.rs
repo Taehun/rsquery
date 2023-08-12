@@ -5,25 +5,23 @@ use utoipa::ToSchema;
 
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize, Serialize, Clone, ToSchema)]
-pub struct Todo {
+pub struct QueryJob {
     pub id: Option<String>,
-    pub title: String,
-    pub content: String,
+    #[schema(example = "SELECT * FROM test")]
+    pub query: String,
     pub completed: Option<bool>,
     #[schema(value_type = Option<String>)]
     pub createdAt: Option<DateTime<Utc>>,
-    #[schema(value_type = Option<String>)]
-    pub updatedAt: Option<DateTime<Utc>>,
 }
 
 pub struct AppState {
-    pub todo_db: Arc<Mutex<Vec<Todo>>>,
+    pub jobs_db: Arc<Mutex<Vec<QueryJob>>>,
 }
 
 impl AppState {
     pub fn init() -> AppState {
         AppState {
-            todo_db: Arc::new(Mutex::new(Vec::new())),
+            jobs_db: Arc::new(Mutex::new(Vec::new())),
         }
     }
 }
@@ -32,12 +30,4 @@ impl AppState {
 pub struct QueryOptions {
     pub page: Option<usize>,
     pub limit: Option<usize>,
-}
-
-#[allow(non_snake_case)]
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct UpdateTodoSchema {
-    pub title: Option<String>,
-    pub content: Option<String>,
-    pub completed: Option<bool>,
 }

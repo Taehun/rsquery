@@ -19,17 +19,13 @@ async fn main() -> std::io::Result<()> {
     #[derive(OpenApi)]
     #[openapi(
         paths(
-            handler::todos_list_handler,
-            handler::create_todo_handler,
-            handler::get_todo_handler,
-            handler::edit_todo_handler,
-            handler::delete_todo_handler,
+            handler::create_query_job_handler,
         ),
         components(
-            schemas(model::Todo, model::UpdateTodoSchema, response::ErrorResponse)
+            schemas(model::QueryJob, response::QueryJobData, response::QueryJobResponse, response::ErrorResponse)
         ),
         tags(
-            (name = "todo", description = "Todo management endpoints.")
+            (name = "RSQuery", description = "RSQuery REST API endpoints.")
         ),
     )]
     struct ApiDoc;
@@ -45,6 +41,8 @@ async fn main() -> std::io::Result<()> {
         let cors = Cors::default()
             .allowed_origin("http://localhost:3000")
             .allowed_origin("http://localhost:3000/")
+            .allowed_origin("http://localhost:8080")
+            .allowed_origin("http://localhost:8080/")
             .allowed_methods(vec!["GET", "POST"])
             .allowed_headers(vec![
                 header::CONTENT_TYPE,
