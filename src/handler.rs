@@ -5,6 +5,7 @@ use crate::{
 use actix_web::{get, post, web, HttpResponse, Responder};
 use chrono::prelude::*;
 use uuid::Uuid;
+use std::{thread, time};
 
 #[get("/health")]
 async fn health_checker_handler() -> impl Responder {
@@ -111,6 +112,7 @@ async fn create_query_job_handler(
         status: "success".to_string(),
         result: query_result,
     };
+    thread::sleep(time::Duration::from_millis(300)); // Delay for progress bar test
 
     HttpResponse::Ok().json(json_response)
 }
