@@ -1,6 +1,6 @@
 use crate::{
     model::{AppState, QueryJob},
-    response::{GenericResponse, QueryJobData, QueryJobResponse},
+    response::{Field, GenericResponse, QueryJobResponse, QueryJobResult, Schema},
 };
 use actix_web::{get, post, web, HttpResponse, Responder};
 use chrono::prelude::*;
@@ -37,7 +37,6 @@ async fn create_query_job_handler(
     mut body: web::Json<QueryJob>,
     data: web::Data<AppState>,
 ) -> impl Responder {
-    let mut vec = data.jobs_db.lock().unwrap();
     let uuid_id = Uuid::new_v4();
     let datetime = Utc::now();
 
@@ -45,15 +44,72 @@ async fn create_query_job_handler(
     body.completed = Some(false);
     body.createdAt = Some(datetime);
 
-    let job = body.to_owned();
+    let mut job = body.to_owned();
 
-    println!("{:?}", body);
+    // TODO: Query to Ballista...
+    // Sample resonse data
+    let query_result: QueryJobResult = QueryJobResult {
+        schema: Schema {
+            fields: vec![
+                Field {
+                    name: "fullVisitorId".to_string(),
+                    field_type: "STRING".to_string(),
+                    mode: "NULLABLE".to_string(),
+                },
+                Field {
+                    name: "visitStartTime".to_string(),
+                    field_type: "INTEGER".to_string(),
+                    mode: "NULLABLE".to_string(),
+                },
+                Field {
+                    name: "date".to_string(),
+                    field_type: "TIMESTAMP".to_string(),
+                    mode: "NULLABLE".to_string(),
+                },
+                Field {
+                    name: "deviceCategory".to_string(),
+                    field_type: "STRING".to_string(),
+                    mode: "NULLABLE".to_string(),
+                },
+                Field {
+                    name: "isMobile".to_string(),
+                    field_type: "BOOLEAN".to_string(),
+                    mode: "NULLABLE".to_string(),
+                },
+            ],
+        },
+        total_rows: 3,
+        rows: vec![
+            vec![
+                "0550235018201479682".to_string(),
+                "1471527222".to_string(),
+                "1.4714784E9".to_string(),
+                "mobile".to_string(),
+                "true".to_string(),
+            ],
+            vec![
+                "0550235018201479682".to_string(),
+                "1471527222".to_string(),
+                "1.4714784E9".to_string(),
+                "mobile".to_string(),
+                "true".to_string(),
+            ],
+            vec![
+                "0550235018201479682".to_string(),
+                "1471527222".to_string(),
+                "1.4714784E9".to_string(),
+                "mobile".to_string(),
+                "true".to_string(),
+            ],
+        ],
+    };
 
-    vec.push(body.into_inner());
+    job.completed = Some(true);
+    println!("{:?}", job);
 
     let json_response = QueryJobResponse {
         status: "success".to_string(),
-        result: QueryJobData { job },
+        result: query_result,
     };
 
     HttpResponse::Ok().json(json_response)

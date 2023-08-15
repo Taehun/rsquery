@@ -15,9 +15,28 @@ pub struct QueryJobData {
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
+pub struct Field {
+    pub name: String,
+    pub field_type: String,
+    pub mode: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
+pub struct Schema {
+    pub fields: Vec<Field>,
+}
+
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
+pub struct QueryJobResult {
+    pub schema: Schema,
+    pub total_rows: u32,
+    pub rows: Vec<Vec<String>>,
+}
+
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct QueryJobResponse {
     pub status: String,
-    pub result: QueryJobData,
+    pub result: QueryJobResult,
 }
 
 #[derive(Serialize, Deserialize, Clone, ToSchema)]
