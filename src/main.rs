@@ -8,6 +8,7 @@ use actix_web::{http::header, web, App, HttpServer};
 use model::AppState;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
+use response::*;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -19,10 +20,14 @@ async fn main() -> std::io::Result<()> {
     #[derive(OpenApi)]
     #[openapi(
         paths(
+            handler::health_checker_handler,
             handler::create_query_job_handler,
         ),
         components(
-            schemas(model::QueryJob, response::QueryJobData, response::QueryJobResponse, response::ErrorResponse)
+            schemas(
+                model::QueryJob,
+                Schema, Field, QueryJobData, QueryJobResponse, QueryJobResult, GenericResponse, ErrorResponse
+            )
         ),
         tags(
             (name = "RSQuery", description = "RSQuery REST API endpoints.")

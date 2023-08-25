@@ -7,6 +7,19 @@ use chrono::prelude::*;
 use uuid::Uuid;
 use std::{thread, time};
 
+/// Check this server is aliva or not.
+///
+///
+/// One could call the api with.
+/// ```text
+/// curl -X GET -H "Content-Type: application/json" http://localhost:8080/health
+/// ```
+#[utoipa::path(
+    path = "/health",
+    responses(
+        (status = 200, description = "Query job is created successfully", body = GenericResponse),
+    )
+)]
 #[get("/health")]
 async fn health_checker_handler() -> impl Responder {
     const MESSAGE: &str = "RSQuery REST API server is running!";
@@ -24,7 +37,7 @@ async fn health_checker_handler() -> impl Responder {
 ///
 /// One could call the api with.
 /// ```text
-/// curl -X POST http://localhost:8080/api/query -H "Content-Type: application/json" -d '{"query": "SELECT * FROM test"}'
+/// curl -X POST -H "Content-Type: application/json" -d '{"query": "SELECT * FROM test"}' http://localhost:8080/api/query
 /// ```
 #[utoipa::path(
     path = "/api/query",
@@ -45,7 +58,9 @@ async fn create_query_job_handler(
     body.completed = Some(false);
     body.createdAt = Some(datetime);
 
-    let mut job = body.to_owned();
+    let mut req_data = body.to_owned();
+    //let ballista_config = ballista_config_builder.build()?;
+    //let ctx = BallistaContext::remote("localhost", 50050, &ballista_config).await?;
 
     // TODO: Query to Ballista...
     // Sample resonse data
@@ -105,8 +120,7 @@ async fn create_query_job_handler(
         ],
     };
 
-    job.completed = Some(true);
-    println!("{:?}", job);
+    println!("{}", req_data.query);
 
     let json_response = QueryJobResponse {
         status: "success".to_string(),
@@ -119,8 +133,7 @@ async fn create_query_job_handler(
 
 pub fn config(conf: &mut web::ServiceConfig) {
     let scope = web::scope("/api")
-        .service(health_checker_handler)
         .service(create_query_job_handler);
 
-    conf.service(scope);
+    conf.service(health_checker_handler).service(scope);
 }

@@ -3,7 +3,7 @@ use utoipa::ToSchema;
 
 use crate::model::QueryJob;
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct GenericResponse {
     pub status: String,
     pub message: String,
