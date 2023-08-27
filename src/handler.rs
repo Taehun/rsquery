@@ -7,12 +7,12 @@ use chrono::prelude::*;
 use uuid::Uuid;
 use std::{thread, time};
 
-/// Check this server is aliva or not.
+/// Check the server health
 ///
 ///
 /// One could call the api with.
 /// ```text
-/// curl -X GET -H "Content-Type: application/json" http://localhost:8080/health
+/// curl -X GET -H "Content-Type: application/json" https://rsquery-api.taehun.dev/health
 /// ```
 #[utoipa::path(
     path = "/health",
@@ -31,13 +31,13 @@ async fn health_checker_handler() -> impl Responder {
     HttpResponse::Ok().json(response_json)
 }
 
-/// Create new query job to shared in-memory storage.
+/// Run a SQL query and response it's result
 ///
-/// Post a new `QueryJob` in request body as json to store it. Api will return created `QueryJob` on success
+/// Pass the SQL query as a POST request parameter, and respond with the results of the execution.
 ///
 /// One could call the api with.
 /// ```text
-/// curl -X POST -H "Content-Type: application/json" -d '{"query": "SELECT * FROM test"}' http://localhost:8080/api/query
+/// curl -X POST -H "Content-Type: application/json" -d '{"query": "SELECT * FROM test"}' https://rsquery-api.taehun.dev/api/query
 /// ```
 #[utoipa::path(
     path = "/api/query",
@@ -59,8 +59,6 @@ async fn create_query_job_handler(
     body.createdAt = Some(datetime);
 
     let mut req_data = body.to_owned();
-    //let ballista_config = ballista_config_builder.build()?;
-    //let ctx = BallistaContext::remote("localhost", 50050, &ballista_config).await?;
 
     // TODO: Query to Ballista...
     // Sample resonse data

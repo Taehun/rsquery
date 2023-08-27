@@ -9,37 +9,37 @@ pub struct GenericResponse {
     pub message: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct QueryJobData {
     pub job: QueryJob,
 }
 
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct Field {
     pub name: String,
     pub field_type: String,
     pub mode: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct Schema {
     pub fields: Vec<Field>,
 }
 
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct QueryJobResult {
     pub schema: Schema,
     pub total_rows: u32,
     pub rows: Vec<Vec<String>>,
 }
 
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct QueryJobResponse {
     pub status: String,
     pub result: QueryJobResult,
 }
 
-#[derive(Serialize, Deserialize, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub(super) enum ErrorResponse {
     /// When Todo is not found by search term.
     NotFound(String),
