@@ -35,8 +35,8 @@ async fn main() -> std::io::Result<()> {
     )]
     struct ApiDoc;
 
-    let todo_db = AppState::init();
-    let app_data = web::Data::new(todo_db);
+    let ballista_ctx = AppState::init().await;
+    let app_data: web::Data<AppState> = web::Data::new(ballista_ctx);
     let openapi: utoipa::openapi::OpenApi = ApiDoc::openapi();
 
     println!("🚀 Server started successfully");
