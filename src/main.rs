@@ -26,7 +26,7 @@ async fn main() -> std::io::Result<()> {
         components(
             schemas(
                 model::QueryJob,
-                Schema, Field, QueryJobData, QueryJobResponse, QueryJobResult, GenericResponse, ErrorResponse
+                QueryJobData, QueryJobResponse, QueryJobResult, GenericResponse, ErrorResponse
             )
         ),
         tags(

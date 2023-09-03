@@ -1,11 +1,82 @@
 use crate::{
     model::{AppState, QueryJob},
-    response::{Field, GenericResponse, QueryJobResponse, QueryJobResult, Schema},
+    response::{
+        ErrorResponse, GenericResponse, QueryJobResponse, QueryJobResponseString, QueryJobResult,
+    },
 };
 use actix_web::{get, post, web, HttpResponse, Responder};
 use chrono::prelude::*;
+use datafusion::arrow::{
+    array::{
+        Float32Array, Float64Array, Int16Array, Int32Array, Int64Array, Int8Array, StringArray,
+        UInt64Array, UInt8Array,
+    },
+    datatypes::*,
+    record_batch::RecordBatch,
+};
 use uuid::Uuid;
-use std::{thread, time};
+
+fn record_batch_to_vec(batch: RecordBatch) -> Vec<Vec<String>> {
+    let mut result = Vec::new();
+
+    for i in 0..batch.num_columns() {
+        let column = batch.column(i);
+        let mut values = Vec::new();
+
+        for j in 0..column.len() {
+            if column.is_null(j) {
+                values.push("".to_string());
+            } else {
+                match column.data_type() {
+                    DataType::Utf8 => {
+                        let array = column.as_any().downcast_ref::<StringArray>().unwrap();
+                        values.push(array.value(j).to_string());
+                    }
+                    DataType::Int32 => {
+                        let array = column.as_any().downcast_ref::<Int32Array>().unwrap();
+                        values.push(array.value(j).to_string());
+                    }
+                    DataType::Int16 => {
+                        let array = column.as_any().downcast_ref::<Int16Array>().unwrap();
+                        values.push(array.value(j).to_string());
+                    }
+                    DataType::Int8 => {
+                        let array = column.as_any().downcast_ref::<Int8Array>().unwrap();
+                        values.push(array.value(j).to_string());
+                    }
+                    DataType::Int64 => {
+                        let array = column.as_any().downcast_ref::<Int64Array>().unwrap();
+                        values.push(array.value(j).to_string());
+                    }
+                    DataType::Float32 => {
+                        let array = column.as_any().downcast_ref::<Float32Array>().unwrap();
+                        values.push(array.value(j).to_string());
+                    }
+                    DataType::Float64 => {
+                        let array = column.as_any().downcast_ref::<Float64Array>().unwrap();
+                        values.push(array.value(j).to_string());
+                    }
+                    DataType::UInt8 => {
+                        let array: &datafusion::arrow::array::PrimitiveArray<UInt8Type> =
+                            column.as_any().downcast_ref::<UInt8Array>().unwrap();
+                        values.push(array.value(j).to_string());
+                    }
+                    DataType::UInt64 => {
+                        let array = column.as_any().downcast_ref::<UInt64Array>().unwrap();
+                        values.push(array.value(j).to_string());
+                    }
+                    _ => {
+                        values.push("ERROR".to_string()); // Handle unknown data types
+                    }
+                }
+            }
+        }
+
+        result.push(values);
+    }
+
+    result
+}
 
 /// Check the server health
 ///
@@ -58,80 +129,49 @@ async fn create_query_job_handler(
     body.completed = Some(false);
     body.createdAt = Some(datetime);
 
-    let mut req_data = body.to_owned();
+    let req_data = body.to_owned();
+    println!("{}", req_data.query.as_str());
 
-    // TODO: Query to Ballista...
-    // Sample resonse data
-    let query_result: QueryJobResult = QueryJobResult {
-        schema: Schema {
-            fields: vec![
-                Field {
-                    name: "fullVisitorId".to_string(),
-                    field_type: "STRING".to_string(),
-                    mode: "NULLABLE".to_string(),
-                },
-                Field {
-                    name: "visitStartTime".to_string(),
-                    field_type: "INTEGER".to_string(),
-                    mode: "NULLABLE".to_string(),
-                },
-                Field {
-                    name: "date".to_string(),
-                    field_type: "TIMESTAMP".to_string(),
-                    mode: "NULLABLE".to_string(),
-                },
-                Field {
-                    name: "deviceCategory".to_string(),
-                    field_type: "STRING".to_string(),
-                    mode: "NULLABLE".to_string(),
-                },
-                Field {
-                    name: "isMobile".to_string(),
-                    field_type: "BOOLEAN".to_string(),
-                    mode: "NULLABLE".to_string(),
-                },
-            ],
-        },
-        total_rows: 3,
-        rows: vec![
-            vec![
-                "0550235018201479682".to_string(),
-                "1471527222".to_string(),
-                "1.4714784E9".to_string(),
-                "mobile".to_string(),
-                "true".to_string(),
-            ],
-            vec![
-                "0550235018201479682".to_string(),
-                "1471527222".to_string(),
-                "1.4714784E9".to_string(),
-                "mobile".to_string(),
-                "true".to_string(),
-            ],
-            vec![
-                "0550235018201479682".to_string(),
-                "1471527222".to_string(),
-                "1.4714784E9".to_string(),
-                "mobile".to_string(),
-                "true".to_string(),
-            ],
-        ],
+    let ctx = data.ballista_context.lock().unwrap();
+    let df = match ctx.sql(req_data.query.as_str()).await {
+        Ok(result) => result,
+        Err(e) => {
+            return HttpResponse::InternalServerError()
+                .json(ErrorResponse::InternalServerError(e.to_string()));
+        }
     };
 
-    println!("{}", req_data.query);
+    let result = match df.collect().await {
+        Ok(result) => result,
+        Err(e) => {
+            return HttpResponse::InternalServerError()
+                .json(ErrorResponse::InternalServerError(e.to_string()));
+        }
+    };
+
+    if result.len() == 0 {
+        return HttpResponse::Ok().json(QueryJobResponseString {
+            status: "success".to_string(),
+            result: "Query job is success".to_string(),
+        });
+    }
+
+    let record_batch = result[0].clone();
+    let query_result: QueryJobResult = QueryJobResult {
+        total_rows: record_batch.num_rows() as u32,
+        columns: record_batch_to_vec(record_batch),
+    };
 
     let json_response = QueryJobResponse {
         status: "success".to_string(),
         result: query_result,
     };
-    thread::sleep(time::Duration::from_millis(300)); // Delay for progress bar test
 
     HttpResponse::Ok().json(json_response)
 }
 
 pub fn config(conf: &mut web::ServiceConfig) {
-    let scope = web::scope("/api")
-        .service(create_query_job_handler);
+    let scope = web::scope("/api").service(create_query_job_handler);
 
     conf.service(health_checker_handler).service(scope);
 }

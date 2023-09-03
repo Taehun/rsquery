@@ -1,7 +1,6 @@
+use crate::model::QueryJob;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-
-use crate::model::QueryJob;
 
 #[derive(Serialize, ToSchema)]
 pub struct GenericResponse {
@@ -15,22 +14,9 @@ pub struct QueryJobData {
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct Field {
-    pub name: String,
-    pub field_type: String,
-    pub mode: String,
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct Schema {
-    pub fields: Vec<Field>,
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
 pub struct QueryJobResult {
-    pub schema: Schema,
     pub total_rows: u32,
-    pub rows: Vec<Vec<String>>,
+    pub columns: Vec<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -40,11 +26,16 @@ pub struct QueryJobResponse {
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
+pub struct QueryJobResponseString {
+    pub status: String,
+    pub result: String,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
 pub(super) enum ErrorResponse {
     /// When Todo is not found by search term.
     NotFound(String),
-    /// When there is a conflict storing a new todo.
-    Conflict(String),
+    InternalServerError(String),
     /// When todo endpoint was called without correct credentials
     Unauthorized(String),
 }
