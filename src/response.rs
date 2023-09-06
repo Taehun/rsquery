@@ -1,5 +1,6 @@
 use crate::model::QueryJob;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use utoipa::ToSchema;
 
 #[derive(Serialize, ToSchema)]
@@ -16,19 +17,14 @@ pub struct QueryJobData {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct QueryJobResult {
     pub total_rows: u32,
-    pub columns: Vec<Vec<String>>,
+    pub columns: Vec<Vec<Value>>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct QueryJobResponse {
-    pub status: String,
+    pub message: String,
+    pub job_type: String,
     pub result: QueryJobResult,
-}
-
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct QueryJobResponseString {
-    pub status: String,
-    pub result: String,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]

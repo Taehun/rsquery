@@ -1,82 +1,11 @@
 use crate::{
+    handle_result::record_batch_to_vec,
     model::{AppState, QueryJob},
-    response::{
-        ErrorResponse, GenericResponse, QueryJobResponse, QueryJobResponseString, QueryJobResult,
-    },
+    response::{ErrorResponse, GenericResponse, QueryJobResponse, QueryJobResult},
 };
 use actix_web::{get, post, web, HttpResponse, Responder};
 use chrono::prelude::*;
-use datafusion::arrow::{
-    array::{
-        Float32Array, Float64Array, Int16Array, Int32Array, Int64Array, Int8Array, StringArray,
-        UInt64Array, UInt8Array,
-    },
-    datatypes::*,
-    record_batch::RecordBatch,
-};
 use uuid::Uuid;
-
-fn record_batch_to_vec(batch: RecordBatch) -> Vec<Vec<String>> {
-    let mut result = Vec::new();
-
-    for i in 0..batch.num_columns() {
-        let column = batch.column(i);
-        let mut values = Vec::new();
-
-        for j in 0..column.len() {
-            if column.is_null(j) {
-                values.push("".to_string());
-            } else {
-                match column.data_type() {
-                    DataType::Utf8 => {
-                        let array = column.as_any().downcast_ref::<StringArray>().unwrap();
-                        values.push(array.value(j).to_string());
-                    }
-                    DataType::Int32 => {
-                        let array = column.as_any().downcast_ref::<Int32Array>().unwrap();
-                        values.push(array.value(j).to_string());
-                    }
-                    DataType::Int16 => {
-                        let array = column.as_any().downcast_ref::<Int16Array>().unwrap();
-                        values.push(array.value(j).to_string());
-                    }
-                    DataType::Int8 => {
-                        let array = column.as_any().downcast_ref::<Int8Array>().unwrap();
-                        values.push(array.value(j).to_string());
-                    }
-                    DataType::Int64 => {
-                        let array = column.as_any().downcast_ref::<Int64Array>().unwrap();
-                        values.push(array.value(j).to_string());
-                    }
-                    DataType::Float32 => {
-                        let array = column.as_any().downcast_ref::<Float32Array>().unwrap();
-                        values.push(array.value(j).to_string());
-                    }
-                    DataType::Float64 => {
-                        let array = column.as_any().downcast_ref::<Float64Array>().unwrap();
-                        values.push(array.value(j).to_string());
-                    }
-                    DataType::UInt8 => {
-                        let array: &datafusion::arrow::array::PrimitiveArray<UInt8Type> =
-                            column.as_any().downcast_ref::<UInt8Array>().unwrap();
-                        values.push(array.value(j).to_string());
-                    }
-                    DataType::UInt64 => {
-                        let array = column.as_any().downcast_ref::<UInt64Array>().unwrap();
-                        values.push(array.value(j).to_string());
-                    }
-                    _ => {
-                        values.push("ERROR".to_string()); // Handle unknown data types
-                    }
-                }
-            }
-        }
-
-        result.push(values);
-    }
-
-    result
-}
 
 /// Check the server health
 ///
@@ -150,9 +79,13 @@ async fn create_query_job_handler(
     };
 
     if result.len() == 0 {
-        return HttpResponse::Ok().json(QueryJobResponseString {
-            status: "success".to_string(),
-            result: "Query job is success".to_string(),
+        return HttpResponse::Ok().json(QueryJobResponse {
+            message: "success".to_string(),
+            job_type: "job".to_string(),
+            result: QueryJobResult {
+                total_rows: 0,
+                columns: Vec::new(),
+            },
         });
     }
 
@@ -163,7 +96,8 @@ async fn create_query_job_handler(
     };
 
     let json_response = QueryJobResponse {
-        status: "success".to_string(),
+        message: "success".to_string(),
+        job_type: "table".to_string(),
         result: query_result,
     };
 
