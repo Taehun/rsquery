@@ -4,11 +4,16 @@ use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use utoipa::ToSchema;
 
+#[derive(Deserialize, Serialize, Clone, ToSchema)]
+pub struct QueryJobRequest {
+    #[schema(example = "SELECT * FROM test")]
+    pub query: String,
+}
+
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize, Serialize, Clone, ToSchema)]
 pub struct QueryJob {
     pub id: Option<String>,
-    #[schema(example = "SELECT * FROM test")]
     pub query: String,
     pub completed: Option<bool>,
     #[schema(value_type = Option<String>)]

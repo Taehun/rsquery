@@ -1,6 +1,6 @@
 use crate::{
     handle_result::record_batch_to_vec,
-    model::{AppState, QueryJob},
+    model::{AppState, QueryJob, QueryJobRequest},
     response::{ErrorResponse, GenericResponse, QueryJobResponse, QueryJobResult},
 };
 use actix_web::{get, post, web, HttpResponse, Responder};
@@ -41,28 +41,30 @@ async fn health_checker_handler() -> impl Responder {
 /// ```
 #[utoipa::path(
     path = "/api/query",
-    request_body = QueryJob,
+    request_body = QueryJobRequest,
     responses(
         (status = 200, description = "Query job is created successfully", body = QueryJobResponse),
     )
 )]
 #[post("/query")]
 async fn create_query_job_handler(
-    mut body: web::Json<QueryJob>,
+    body: web::Json<QueryJobRequest>,
     data: web::Data<AppState>,
 ) -> impl Responder {
     let uuid_id = Uuid::new_v4();
     let datetime = Utc::now();
 
-    body.id = Some(uuid_id.to_string());
-    body.completed = Some(false);
-    body.createdAt = Some(datetime);
-
     let req_data = body.to_owned();
-    println!("{}", req_data.query.as_str());
+    let query_job: QueryJob = QueryJob {
+        id: Some(uuid_id.to_string()),
+        query: req_data.query,
+        completed: Some(false),
+        createdAt: Some(datetime),
+    };
+    println!("{:?}", query_job);
 
     let ctx = data.ballista_context.lock().unwrap();
-    let df = match ctx.sql(req_data.query.as_str()).await {
+    let df = match ctx.sql(query_job.query.as_str()).await {
         Ok(result) => result,
         Err(e) => {
             return HttpResponse::InternalServerError()
