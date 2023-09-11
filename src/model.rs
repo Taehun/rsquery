@@ -1,6 +1,7 @@
 use ballista::prelude::{BallistaConfig, BallistaContext};
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::env;
 use std::sync::{Arc, Mutex};
 use utoipa::ToSchema;
 
@@ -31,9 +32,15 @@ impl AppState {
         let ballista_config = ballista_config_builder
             .build()
             .expect("Failed to build BallistaConfig");
-        let ballista_context = BallistaContext::remote("localhost", 50050, &ballista_config)
-            .await
-            .expect("ballista_context");
+        let ballista_url = env::var("BALLISTA_URL").unwrap_or("localhost".to_string());
+        let ballista_port = env::var("BALLISTA_PORT").unwrap_or("50050".to_string());
+        let ballista_context = BallistaContext::remote(
+            &ballista_url,
+            ballista_port.parse::<u16>().unwrap(),
+            &ballista_config,
+        )
+        .await
+        .expect("ballista_context");
 
         AppState {
             ballista_context: Arc::new(Mutex::new(ballista_context)),
