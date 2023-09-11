@@ -1,0 +1,3 @@
+[submodule "arrow-ballista"]
+	path = arrow-ballista
+	url = https://github.com/apache/arrow-ballista.git
