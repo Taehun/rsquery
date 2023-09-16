@@ -1,7 +1,7 @@
 use crate::{
     handle_result::record_batch_to_vec,
     model::{AppState, QueryJob, QueryJobRequest},
-    response::{ErrorResponse, GenericResponse, QueryJobResponse, QueryJobResult},
+    response::{ErrorResponse, GenericResponse, QueryJobResponse, QueryJobResult, Schema},
 };
 use actix_web::{get, post, web, HttpResponse, Responder};
 use chrono::prelude::*;
@@ -82,24 +82,25 @@ async fn create_query_job_handler(
 
     if result.len() == 0 {
         return HttpResponse::Ok().json(QueryJobResponse {
-            message: "success".to_string(),
-            job_type: "job".to_string(),
+            message: "Query job is completed".to_string(),
+            res_type: "message".to_string(),
             result: QueryJobResult {
                 total_rows: 0,
+                schema: Schema {
+                    fields: Vec::new(),
+                    types: Vec::new(),
+                },
                 columns: Vec::new(),
             },
         });
     }
 
     let record_batch = result[0].clone();
-    let query_result: QueryJobResult = QueryJobResult {
-        total_rows: record_batch.num_rows() as u32,
-        columns: record_batch_to_vec(record_batch),
-    };
+    let query_result: QueryJobResult = record_batch_to_vec(record_batch);
 
     let json_response = QueryJobResponse {
         message: "success".to_string(),
-        job_type: "table".to_string(),
+        res_type: "table".to_string(),
         result: query_result,
     };
 

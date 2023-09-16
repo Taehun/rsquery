@@ -1,3 +1,4 @@
+use crate::response::{QueryJobResult, Schema};
 use datafusion::arrow::{array::*, datatypes::DataType, record_batch::RecordBatch};
 use serde_json::Value;
 
@@ -5,90 +6,46 @@ trait AsJsonValue {
     fn as_json_value(&self, index: usize) -> Value;
 }
 
-impl AsJsonValue for StringArray {
-    fn as_json_value(&self, index: usize) -> Value {
-        Value::String(self.value(index).to_string())
-    }
+macro_rules! impl_as_json_value_for_number {
+    ($array_type:ty) => {
+        impl AsJsonValue for $array_type {
+            fn as_json_value(&self, index: usize) -> Value {
+                Value::Number(self.value(index).into())
+            }
+        }
+    };
 }
+
+macro_rules! impl_as_json_value_for_string {
+    ($array_type:ty) => {
+        impl AsJsonValue for $array_type {
+            fn as_json_value(&self, index: usize) -> Value {
+                Value::String(self.value(index).to_string())
+            }
+        }
+    };
+}
+
+impl_as_json_value_for_string!(StringArray);
+impl_as_json_value_for_string!(Float32Array);
+impl_as_json_value_for_string!(Float64Array);
+impl_as_json_value_for_string!(Date32Array);
+impl_as_json_value_for_string!(Date64Array);
 
 impl AsJsonValue for BooleanArray {
     fn as_json_value(&self, index: usize) -> Value {
-        Value::Bool(self.value(index).into())
+        Value::Bool(self.value(index))
     }
 }
 
-impl AsJsonValue for UInt8Array {
-    fn as_json_value(&self, index: usize) -> Value {
-        Value::Number(self.value(index).into())
-    }
-}
-
-impl AsJsonValue for UInt16Array {
-    fn as_json_value(&self, index: usize) -> Value {
-        Value::Number(self.value(index).into())
-    }
-}
-
-impl AsJsonValue for UInt32Array {
-    fn as_json_value(&self, index: usize) -> Value {
-        Value::Number(self.value(index).into())
-    }
-}
-impl AsJsonValue for UInt64Array {
-    fn as_json_value(&self, index: usize) -> Value {
-        Value::Number(self.value(index).into())
-    }
-}
-
-impl AsJsonValue for Int8Array {
-    fn as_json_value(&self, index: usize) -> Value {
-        Value::Number(self.value(index).into())
-    }
-}
-
-impl AsJsonValue for Int16Array {
-    fn as_json_value(&self, index: usize) -> Value {
-        Value::Number(self.value(index).into())
-    }
-}
-
-impl AsJsonValue for Int32Array {
-    fn as_json_value(&self, index: usize) -> Value {
-        Value::Number(self.value(index).into())
-    }
-}
-
-impl AsJsonValue for Int64Array {
-    fn as_json_value(&self, index: usize) -> Value {
-        Value::Number(self.value(index).into())
-    }
-}
-
-impl AsJsonValue for Float32Array {
-    fn as_json_value(&self, index: usize) -> Value {
-        Value::String(self.value(index).to_string())
-    }
-}
-
-impl AsJsonValue for Float64Array {
-    fn as_json_value(&self, index: usize) -> Value {
-        Value::String(self.value(index).to_string())
-    }
-}
-
-impl AsJsonValue for Date32Array {
-    fn as_json_value(&self, index: usize) -> Value {
-        Value::String(self.value(index).to_string())
-    }
-}
-
-impl AsJsonValue for Date64Array {
-    fn as_json_value(&self, index: usize) -> Value {
-        Value::String(self.value(index).to_string())
-    }
-}
-
-// ... Repeat for other array types ...
+impl_as_json_value_for_number!(UInt8Array);
+impl_as_json_value_for_number!(UInt16Array);
+impl_as_json_value_for_number!(UInt32Array);
+impl_as_json_value_for_number!(UInt64Array);
+impl_as_json_value_for_number!(Int8Array);
+impl_as_json_value_for_number!(Int16Array);
+impl_as_json_value_for_number!(Int32Array);
+impl_as_json_value_for_number!(Int64Array);
 
 #[inline]
 fn handle_column(column: &ArrayRef, j: usize) -> Value {
@@ -96,84 +53,72 @@ fn handle_column(column: &ArrayRef, j: usize) -> Value {
         return Value::String("".to_string());
     }
 
+    macro_rules! downcast_and_invoke {
+        ($array_type:ty) => {
+            column
+                .as_any()
+                .downcast_ref::<$array_type>()
+                .unwrap()
+                .as_json_value(j)
+        };
+    }
+
     match column.data_type() {
-        DataType::Utf8 => {
-            let array = column.as_any().downcast_ref::<StringArray>().unwrap();
-            array.as_json_value(j)
-        }
-        DataType::Boolean => {
-            let array = column.as_any().downcast_ref::<BooleanArray>().unwrap();
-            array.as_json_value(j)
-        }
-        DataType::UInt8 => {
-            let array = column.as_any().downcast_ref::<UInt8Array>().unwrap();
-            array.as_json_value(j)
-        }
-        DataType::UInt16 => {
-            let array = column.as_any().downcast_ref::<UInt16Array>().unwrap();
-            array.as_json_value(j)
-        }
-        DataType::UInt32 => {
-            let array = column.as_any().downcast_ref::<UInt32Array>().unwrap();
-            array.as_json_value(j)
-        }
-        DataType::UInt64 => {
-            let array = column.as_any().downcast_ref::<UInt64Array>().unwrap();
-            array.as_json_value(j)
-        }
-        DataType::Int8 => {
-            let array = column.as_any().downcast_ref::<Int8Array>().unwrap();
-            array.as_json_value(j)
-        }
-        DataType::Int16 => {
-            let array = column.as_any().downcast_ref::<Int16Array>().unwrap();
-            array.as_json_value(j)
-        }
-        DataType::Int32 => {
-            let array = column.as_any().downcast_ref::<Int32Array>().unwrap();
-            array.as_json_value(j)
-        }
-        DataType::Int64 => {
-            let array = column.as_any().downcast_ref::<Int64Array>().unwrap();
-            array.as_json_value(j)
-        }
-        DataType::Date32 => {
-            let array = column.as_any().downcast_ref::<Date32Array>().unwrap();
-            array.as_json_value(j)
-        }
-        DataType::Date64 => {
-            let array = column.as_any().downcast_ref::<Date64Array>().unwrap();
-            array.as_json_value(j)
-        }
-        DataType::Float32 => {
-            let array = column.as_any().downcast_ref::<Float32Array>().unwrap();
-            array.as_json_value(j)
-        }
-        DataType::Float64 => {
-            let array = column.as_any().downcast_ref::<Float64Array>().unwrap();
-            array.as_json_value(j)
-        }
+        DataType::Utf8 => downcast_and_invoke!(StringArray),
+        DataType::Boolean => downcast_and_invoke!(BooleanArray),
+        DataType::UInt8 => downcast_and_invoke!(UInt8Array),
+        DataType::UInt16 => downcast_and_invoke!(UInt16Array),
+        DataType::UInt32 => downcast_and_invoke!(UInt32Array),
+        DataType::UInt64 => downcast_and_invoke!(UInt64Array),
+        DataType::Int8 => downcast_and_invoke!(Int8Array),
+        DataType::Int16 => downcast_and_invoke!(Int16Array),
+        DataType::Int32 => downcast_and_invoke!(Int32Array),
+        DataType::Int64 => downcast_and_invoke!(Int64Array),
+        DataType::Float32 => downcast_and_invoke!(Float32Array),
+        DataType::Float64 => downcast_and_invoke!(Float64Array),
+        DataType::Date32 => downcast_and_invoke!(Date32Array),
+        DataType::Date64 => downcast_and_invoke!(Date64Array),
         _ => Value::String("".to_string()),
     }
 }
 
-pub fn record_batch_to_vec(batch: RecordBatch) -> Vec<Vec<Value>> {
-    let mut result: Vec<Vec<Value>> = Vec::new();
+pub fn record_batch_to_vec(batch: RecordBatch) -> QueryJobResult {
+    let num_rows = batch.num_rows() as u32;
 
-    for i in 0..batch.num_columns() {
-        let column = batch.column(i);
-        let mut values: Vec<Value> = Vec::new();
+    let schema_fields: Vec<String> = batch
+        .schema()
+        .fields()
+        .iter()
+        .map(|field| field.name().clone())
+        .collect();
 
-        for j in 0..column.len() {
-            if column.is_null(j) {
-                values.push(Value::String("".to_string()));
-            } else {
-                values.push(handle_column(column, j));
-            }
-        }
+    let schema_types: Vec<String> = batch
+        .schema()
+        .fields()
+        .iter()
+        .map(|field| format!("{:?}", field.data_type()))
+        .collect();
 
-        result.push(values);
+    let columns = (0..batch.num_columns())
+        .map(|i| {
+            (0..batch.column(i).len())
+                .map(|j| {
+                    if batch.column(i).is_null(j) {
+                        Value::String("".to_string())
+                    } else {
+                        handle_column(batch.column(i), j)
+                    }
+                })
+                .collect()
+        })
+        .collect();
+
+    QueryJobResult {
+        total_rows: num_rows,
+        schema: Schema {
+            fields: schema_fields,
+            types: schema_types,
+        },
+        columns,
     }
-
-    result
 }

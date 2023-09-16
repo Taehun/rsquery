@@ -15,15 +15,22 @@ pub struct QueryJobData {
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
+pub struct Schema {
+    pub fields: Vec<String>,
+    pub types: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct QueryJobResult {
     pub total_rows: u32,
+    pub schema: Schema,
     pub columns: Vec<Vec<Value>>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct QueryJobResponse {
     pub message: String,
-    pub job_type: String,
+    pub res_type: String,
     pub result: QueryJobResult,
 }
 
