@@ -1,2 +1,3 @@
-# RSQuery REST API 서버
-REST API -> Apache Arrow Ballista RPC 프록시 서버
+# RSQuery
+Apache Ballista 분산 쿼리 엔진 인터페이스
+- Web -> REST API Server -> Apache Arrow Ballista
