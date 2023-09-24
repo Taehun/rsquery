@@ -116,7 +116,7 @@ export default function Home() {
               </TableBody>
               </Table>
               </> || <>
-              <pre><Text className="text-xs">{resMessage}</Text></pre>
+              <pre><Text className="text-xs overflow-x-auto">{resMessage}</Text></pre>
             </>
             }
             </Card>
