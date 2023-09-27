@@ -1,7 +1,7 @@
 # RSQuery
 [![Build](https://github.com/Taehun/rsquery/actions/workflows/rust.yml/badge.svg)](https://github.com/Taehun/rsquery/actions/workflows/rust.yml)
 
-Apache Ballista 분산 쿼리 엔진 인터페이스
+Apache Ballista 분산 쿼리 엔진 인터페이스 ([관련 기사](https://blog.taehun.dev/rsquery-review))
 
 ![데모](./demo.gif)
 
